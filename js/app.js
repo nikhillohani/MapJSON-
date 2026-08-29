@@ -9,6 +9,7 @@ const App = (() => {
   const STORAGE_PREFIX = 'mapjson_saved_entries_v2_';
   const CURRENT_USER_KEY = 'mapjson_current_user_v2';
   const USAGE_KEY = 'mapjson_usage_log_v1';
+  const DOWNLOAD_HISTORY_KEY = 'mapjson_download_history_v1';
   const THEME_KEY = 'mapjson_theme_mode_v1';
   const SPLASH_KEY = 'mapjson_splash_seen_v2';
   const MORE_FEATURES_PASSWORD = '1212';
@@ -670,6 +671,8 @@ const App = (() => {
         <img class="group-logo mapjson-logo" src="assets/mapjson-logo.jpg" alt="MapJSON" />
       </div>
       <div class="group-head-tools">
+        <button class="undo-btn header-undo-btn" id="undo-btn" type="button" onclick="App.undoLastChange()" disabled>Undo</button>
+        <button class="undo-btn header-undo-btn" id="redo-btn" type="button" onclick="App.redoLastChange()" disabled>Redo</button>
         <a class="gmap-open-cta header-map-cta is-disabled" id="gmap-open-cta" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open Map">
           <img src="assets/google-map-pin.png" alt="" aria-hidden="true" />
           Open Map
@@ -692,15 +695,19 @@ const App = (() => {
 
     // ── Footer: Download JSON
     const footer = el('div', 'group-footer', `
+      ${filledCount === g.slots.length && filledCount > 0 ? `
+        <div class="campaign-field">
+          <label for="campaign-name-${g.gid}">Campaign Name</label>
+          <input id="campaign-name-${g.gid}" type="text" placeholder="Enter campaign name" oninput="App.validateCampaignName(${g.gid})" />
+        </div>
+      ` : ''}
       <div class="footer-actions">
         <button class="folder-btn" id="folder-btn-${g.gid}" onclick="App.chooseDownloadFolder(${g.gid})">
           Choose Folder
         </button>
-        <button class="undo-btn" id="undo-btn" type="button" onclick="App.undoLastChange()" disabled>Undo</button>
-        <button class="undo-btn" id="redo-btn" type="button" onclick="App.redoLastChange()" disabled>Redo</button>
         <button class="dl-btn${filledCount === 0 ? ' is-hidden' : ''}${filledCount === g.slots.length && filledCount > 0 ? ' is-ready' : ''}" id="dl-${g.gid}"
           onclick="App.downloadGroup(${g.gid})"
-          ${filledCount === 0 ? 'disabled' : ''}>
+          ${filledCount === 0 || filledCount === g.slots.length ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
@@ -2169,6 +2176,12 @@ const App = (() => {
   async function downloadGroup(gid) {
     const g = groups.find(g => g.gid === gid);
     if (!g) return;
+    const campaignName = getCampaignName(gid);
+    if (isGroupComplete(g) && !campaignName) {
+      alert('Please enter Campaign Name before downloading JSON.');
+      document.getElementById(`campaign-name-${gid}`)?.focus();
+      return;
+    }
     if (!hasValidCtaForDownload(g)) {
       alert('CTA URL is required before download. Please select a CTA URL or enter a valid custom URL.');
       return;
@@ -2184,8 +2197,30 @@ const App = (() => {
     const filename = 'data.json';
     latestSubmissionId = createSubmissionId();
     await downloadBlob(g.generatedJSON, filename, 'application/json');
+    await recordDownloadHistory({
+      id: latestSubmissionId,
+      campaignName: campaignName || 'Untitled Campaign',
+      stores,
+      filename
+    });
     playSuccessSound();
     markTaskCompleted();
+  }
+
+  function isGroupComplete(g) {
+    return !!g && g.slots.length > 0 && g.slots.every(slot => !!slot.data);
+  }
+
+  function getCampaignName(gid) {
+    return (document.getElementById(`campaign-name-${gid}`)?.value || '').trim();
+  }
+
+  function validateCampaignName(gid) {
+    const g = groups.find(group => group.gid === gid);
+    const btn = document.getElementById(`dl-${gid}`);
+    if (!btn || !g) return;
+    const filledCount = g.slots.filter(slot => slot.data).length;
+    btn.disabled = filledCount === 0 || (isGroupComplete(g) && !getCampaignName(gid));
   }
 
   async function chooseDownloadFolder(gid) {
@@ -2296,6 +2331,75 @@ const App = (() => {
     { bg: 'var(--s6l)', fg: 'var(--s6)' },
   ];
 
+  function getDownloadHistory() {
+    try {
+      return JSON.parse(localStorage.getItem(DOWNLOAD_HISTORY_KEY) || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveDownloadHistory(history) {
+    localStorage.setItem(DOWNLOAD_HISTORY_KEY, JSON.stringify(history.slice(0, 100)));
+  }
+
+  function summarizeStores(stores) {
+    return stores
+      .slice(0, 3)
+      .map(store => [store.label, store.city, store.state].filter(Boolean).join(', '))
+      .filter(Boolean)
+      .join(' | ') || `${stores.length} saved address${stores.length === 1 ? '' : 'es'}`;
+  }
+
+  async function recordDownloadHistory(record) {
+    const now = new Date();
+    const entry = {
+      id: record.id || createSubmissionId(),
+      campaignName: record.campaignName,
+      savedAt: now.toISOString(),
+      savedAtDisplay: now.toLocaleString(),
+      fileName: record.filename || 'data.json',
+      storeCount: record.stores.length,
+      summary: summarizeStores(record.stores),
+      data: { listing: { stores: record.stores } }
+    };
+    saveDownloadHistory([entry, ...getDownloadHistory()]);
+    renderRecentHistory();
+    await writeHistoryRecordFile(entry);
+  }
+
+  async function writeHistoryRecordFile(entry) {
+    if (!downloadFolderHandle) return;
+    try {
+      const safeId = String(entry.id).replace(/[^a-zA-Z0-9_-]/g, '-');
+      const fileHandle = await downloadFolderHandle.getFileHandle(`history-${safeId}.json`, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(new Blob([JSON.stringify(entry, null, 2)], { type: 'application/json' }));
+      await writable.close();
+    } catch (e) {
+      updateStoragePill('History file skipped');
+    }
+  }
+
+  function renderRecentHistory() {
+    const list = document.getElementById('recent-history-list');
+    if (!list) return;
+    const history = getDownloadHistory().slice(0, 10);
+    if (!history.length) {
+      list.innerHTML = '<div class="empty-hist">No downloads yet.</div>';
+      return;
+    }
+    list.innerHTML = history.map(item => `
+      <div class="recent-history-item">
+        <div>
+          <b>${esc(item.campaignName || 'Untitled Campaign')}</b>
+          <span>${esc(item.savedAtDisplay || '')}</span>
+        </div>
+        <p>${esc(item.summary || '')}</p>
+      </div>
+    `).join('');
+  }
+
   function renderHistory() {
     const count = document.getElementById('hist-cnt');
     if (count) count.textContent = allSaved.length;
@@ -2363,6 +2467,7 @@ const App = (() => {
       btn.classList.toggle('is-hidden', filledSlots === 0);
       btn.disabled = filledSlots === 0;
     });
+    groups.forEach(group => validateCampaignName(group.gid));
     if (filledSlots >= totalSlots && totalSlots > 0) stopTaskTimer();
   }
 
@@ -3235,6 +3340,7 @@ const App = (() => {
     showTool('mapjson');
     renderFastTutorials();
     renderUsageLog();
+    renderRecentHistory();
     validateLookupInputs();
     handleConnectorLaunchParams();
   }
@@ -3285,6 +3391,7 @@ const App = (() => {
     addUrlEntryToSlot,
     generateGroup,
     downloadGroup,
+    validateCampaignName,
     chooseDownloadFolder,
     copyLatest,
     copySlotMapUrl,
