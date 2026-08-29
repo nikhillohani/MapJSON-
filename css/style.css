@@ -1262,8 +1262,8 @@ body {
   height: 126px;
   border-radius: 50%;
   padding: 4px;
-  background: linear-gradient(135deg, #93c5fd, #22d3ee, #e5edf8);
-  box-shadow: 0 22px 60px rgba(47,125,246,0.28);
+  background: #cff44a;
+  box-shadow: 0 22px 60px rgba(207,244,74,0.28);
   animation: splashPhotoIn 0.9s 0.12s cubic-bezier(.2,.8,.2,1) both;
 }
 .splash-photo {
@@ -1275,7 +1275,7 @@ body {
   border: 3px solid #0f172a;
 }
 .splash-kicker {
-  color: #e5edf8;
+  color: #cff44a;
   font-size: 24px;
   font-weight: 400;
   letter-spacing: 0;
@@ -1283,7 +1283,7 @@ body {
   animation: splashTextIn 0.8s 0.28s both;
 }
 .splash-credit {
-  color: #38c7ff;
+  color: #cff44a;
   font-size: clamp(38px, 5vw, 58px);
   line-height: 1.08;
   font-weight: 850;
@@ -1313,7 +1313,7 @@ body {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #60a5fa, #22d3ee, #f8fafc);
+  background: linear-gradient(90deg, #cff44a, #e4ff78, #ffffff);
   transform-origin: left;
   animation: splashLine 2.45s 0.35s ease-in-out both;
 }
@@ -2170,10 +2170,10 @@ body.theme-night .lookup-loading span {
   width: 100%;
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.4);
   border-radius: 8px;
-  background: #ffffff;
-  color: #071225;
+  background: rgba(255,255,255,0.96);
+  color: #12204d;
   font-family: var(--sans);
   font-size: 14px;
   font-weight: 800;
@@ -2181,24 +2181,39 @@ body.theme-night .lookup-loading span {
 
 .campaign-field input:focus {
   outline: none;
-  border-color: #cff44a;
-  box-shadow: 0 0 0 3px rgba(207,244,74,0.22);
+  border-color: #4460de;
+  box-shadow: 0 0 0 3px rgba(68,96,222,0.26);
 }
 
 .recent-history-panel {
   order: 98;
+  padding: 12px;
+  border-color: rgba(207,244,74,0.36);
+  border-radius: 12px;
+  background: #cff44a;
+  box-shadow: none;
+}
+
+.recent-history-panel .panel-title {
+  color: #071225 !important;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0;
 }
 
 .recent-history-list {
   display: grid;
   gap: 8px;
+  margin-top: 10px;
 }
 
 .recent-history-item {
-  padding: 10px;
-  border: 1px solid rgba(255,255,255,0.16);
+  padding: 10px 12px;
+  border: 1px solid rgba(7,18,37,0.24);
   border-radius: 8px;
-  background: rgba(7,18,37,0.22);
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.88);
 }
 
 .recent-history-item div {
@@ -2209,22 +2224,22 @@ body.theme-night .lookup-loading span {
 }
 
 .recent-history-item b {
-  color: #cff44a;
+  color: #4460de;
   font-size: 13px;
 }
 
 .recent-history-item span {
-  color: rgba(255,255,255,0.64);
+  color: #667191;
   font-family: var(--mono);
   font-size: 10px;
   white-space: nowrap;
 }
 
 .recent-history-item p {
-  margin: 5px 0 0;
-  color: rgba(255,255,255,0.78);
-  font-size: 12px;
-  line-height: 1.35;
+  margin: 8px 0 0;
+  color: #12204d;
+  font-size: 15px;
+  line-height: 1.34;
 }
 .folder-btn {
   width: 100%;
@@ -5645,4 +5660,50 @@ body.theme-night .panel.dropdown-panel,
     overflow-y: auto !important;
     overflow-x: hidden !important;
   }
+}
+
+/* Keep campaign input visually aligned with the Google Maps URL field. */
+.campaign-field input,
+body.theme-night .campaign-field input,
+body.theme-day .campaign-field input {
+  background: rgba(255,255,255,0.96) !important;
+  border: 1px solid rgba(255,255,255,0.4) !important;
+  color: #12204d !important;
+}
+
+.campaign-field input::placeholder,
+body.theme-night .campaign-field input::placeholder,
+body.theme-day .campaign-field input::placeholder {
+  color: #7b88ad !important;
+}
+
+.campaign-field input:focus,
+body.theme-night .campaign-field input:focus,
+body.theme-day .campaign-field input:focus {
+  border-color: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.28) !important;
+}
+
+/* Final Recent History skin: overrides generic panel/theme rules. */
+.recent-history-panel,
+body.theme-night .recent-history-panel,
+body.theme-day .recent-history-panel,
+body.theme-night .panel.recent-history-panel,
+body.theme-day .panel.recent-history-panel {
+  background: #cff44a !important;
+  border-color: rgba(207,244,74,0.36) !important;
+  border-radius: 12px !important;
+}
+
+.recent-history-panel .panel-title,
+body.theme-night .recent-history-panel .panel-title,
+body.theme-day .recent-history-panel .panel-title {
+  color: #071225 !important;
+}
+
+.recent-history-panel .recent-history-item,
+body.theme-night .recent-history-panel .recent-history-item,
+body.theme-day .recent-history-panel .recent-history-item {
+  background: #ffffff !important;
+  border-color: rgba(7,18,37,0.24) !important;
 }

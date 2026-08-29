@@ -2395,7 +2395,6 @@ const App = (() => {
           <b>${esc(item.campaignName || 'Untitled Campaign')}</b>
           <span>${esc(item.savedAtDisplay || '')}</span>
         </div>
-        <p>${esc(item.summary || '')}</p>
       </div>
     `).join('');
   }
