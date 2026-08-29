@@ -1807,7 +1807,8 @@ const App = (() => {
     if (!block) return;
     const slotData = getSelectedSlot()?.data;
     const hasSlotCoords = !!(slotData && hasCoords(slotData));
-    block.classList.toggle('is-hidden', !hasSlotCoords);
+    const inputCoords = extractCoords(val('url-lookup-input'));
+    block.classList.toggle('is-hidden', !(hasSlotCoords || inputCoords));
   }
 
   function scheduleGmapEmbedUpdate() {
@@ -1824,8 +1825,13 @@ const App = (() => {
     refreshGmapPreviewVisibility();
     if (!frame || !empty) return;
 
-    const data = getSelectedSlot()?.data;
-    if (!data || !hasCoords(data)) {
+    const slotData = getSelectedSlot()?.data;
+    const inputCoords = extractCoords(val('url-lookup-input'));
+    const coords = hasCoords(slotData)
+      ? { lat: Number(slotData.lat), long: Number(slotData.long), label: slotData.label || '' }
+      : (inputCoords ? { ...inputCoords, label: 'Preview from pasted URL' } : null);
+
+    if (!coords) {
       frame.classList.remove('is-visible');
       frame.removeAttribute('src');
       delete frame.dataset.src;
@@ -1834,8 +1840,8 @@ const App = (() => {
       return;
     }
 
-    const lat = Number(data.lat);
-    const long = Number(data.long);
+    const lat = Number(coords.lat);
+    const long = Number(coords.long);
     const src = `https://maps.google.com/maps?q=${lat},${long}&z=17&output=embed`;
     if (frame.dataset.src !== src) {
       frame.src = src;
@@ -1843,7 +1849,7 @@ const App = (() => {
     }
     frame.classList.add('is-visible');
     empty.classList.add('is-hidden');
-    if (label) label.textContent = data.label ? `— ${data.label}` : '';
+    if (label) label.textContent = coords.label ? `— ${coords.label}` : '';
   }
 
   function updateGroupJsonFromSlots(group = groups[0]) {
