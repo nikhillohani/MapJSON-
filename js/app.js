@@ -66,6 +66,7 @@ const App = (() => {
   let downloadFolderHandle = null;
   let latestSubmissionId = '';
   let currentTool = 'hub';
+  let forcedUrlTargetSlotIndex = null;
   const slotMaps = new Map();
   const reverseTimers = new Map();
   let gmapEmbedTimer = null;
@@ -1270,9 +1271,16 @@ const App = (() => {
       validateLookupInputs();
       return;
     }
-    const target = findNextEmptySlot();
+    const target = forcedUrlTargetSlotIndex === null
+      ? findNextEmptySlot()
+      : getSlotTargetByIndex(forcedUrlTargetSlotIndex);
+    forcedUrlTargetSlotIndex = null;
     if (!target) {
       setHint('url-lookup-hint', 'All three slots are full. Clear a slot before adding another address.', 'er');
+      return;
+    }
+    if (target.slot?.data) {
+      setHint('url-lookup-hint', `Address ${target.index + 1} already has data. Clear it before sending a new map URL.`, 'er');
       return;
     }
 
@@ -1719,6 +1727,14 @@ const App = (() => {
     return null;
   }
 
+  function getSlotTargetByIndex(index) {
+    const group = groups[0];
+    if (!group) return null;
+    const safeIndex = Math.max(0, Math.min(group.slots.length - 1, Number(index) || 0));
+    const slot = group.slots[safeIndex];
+    return slot ? { group, slot, index: safeIndex } : null;
+  }
+
   function getSelectedSlot() {
     const group = groups[0];
     if (!group) return null;
@@ -1739,6 +1755,68 @@ const App = (() => {
       const el = slot ? document.getElementById(`slot-${slot.sid}`) : null;
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+  }
+
+  function receiveMapUrlFromExtension(slotIndex, mapUrl, options = {}) {
+    const safeIndex = Math.max(0, Math.min((groups[0]?.slots.length || 1) - 1, Number(slotIndex) || 0));
+    const input = document.getElementById('url-lookup-input');
+    if (!input || !mapUrl) return;
+    showTool('mapjson');
+    selectSlot(safeIndex, { scroll: options.scroll !== false });
+    input.value = String(mapUrl);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    forcedUrlTargetSlotIndex = safeIndex;
+    validateLookupInputs();
+    if (options.autoExtract !== false) {
+      lookupFromUrl();
+    } else {
+      setHint('url-lookup-hint', `Map URL loaded for Address ${safeIndex + 1}. Press Extract & Build Entry.`, 'ok');
+    }
+  }
+
+  async function receiveMapUrlBatchFromExtension(items, options = {}) {
+    const cleanItems = (Array.isArray(items) ? items : [])
+      .map(item => ({
+        slot: Math.max(0, Math.min(2, Number(item.slot) - 1 || 0)),
+        url: String(item.url || '').trim()
+      }))
+      .filter(item => item.url);
+    if (!cleanItems.length) return;
+    showTool('mapjson');
+    for (const item of cleanItems) {
+      receiveMapUrlFromExtension(item.slot, item.url, {
+        autoExtract: false,
+        scroll: false
+      });
+      forcedUrlTargetSlotIndex = item.slot;
+      await lookupFromUrl();
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    setHint('url-lookup-hint', `Connector added ${cleanItems.length} map URL${cleanItems.length > 1 ? 's' : ''}.`, 'ok');
+  }
+
+  function handleConnectorLaunchParams() {
+    const params = new URLSearchParams(window.location.search);
+    const batchRaw = params.get('mapjsonBatch');
+    if (batchRaw) {
+      const autoExtract = params.get('mapjsonAuto') !== '0';
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      try {
+        const batch = JSON.parse(batchRaw);
+        setTimeout(() => {
+          if (autoExtract) receiveMapUrlBatchFromExtension(batch);
+        }, 300);
+      } catch (e) {
+        setHint('url-lookup-hint', 'Could not read connector batch URLs.', 'er');
+      }
+      return;
+    }
+    const mapUrl = params.get('mapjsonUrl');
+    if (!mapUrl) return;
+    const slot = Math.max(1, Math.min(3, Number(params.get('mapjsonSlot')) || 1)) - 1;
+    const autoExtract = params.get('mapjsonAuto') !== '0';
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    setTimeout(() => receiveMapUrlFromExtension(slot, mapUrl, { autoExtract }), 300);
   }
 
   function updateJsonTabs() {
@@ -3011,6 +3089,7 @@ const App = (() => {
     renderFastTutorials();
     renderUsageLog();
     validateLookupInputs();
+    handleConnectorLaunchParams();
   }
 
   function handleSplash() {
@@ -3049,6 +3128,8 @@ const App = (() => {
     saveSlot,
     geocodeSlot,
     lookupFromUrl,
+    receiveMapUrlFromExtension,
+    receiveMapUrlBatchFromExtension,
     lookupFromAddress,
     startEntryTimer,
     toggleUrlEdit,

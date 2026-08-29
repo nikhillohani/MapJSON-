@@ -34,5 +34,14 @@ index.html          Main web app
 css/style.css       App styles
 js/app.js           App logic
 assets/             Images and UI assets
-MapJSON +/          Chrome extension version
 ```
+
+## Google Maps Connector
+
+The main tool supports connector URLs like:
+
+```text
+?mapjsonSlot=1&mapjsonUrl=https%3A%2F%2Fwww.google.com%2Fmaps%2F...&mapjsonAuto=1
+```
+
+Use the separate `MapJSON Connector` extension folder from the main project to send Google Maps locations into Slot 1, 2, or 3.
