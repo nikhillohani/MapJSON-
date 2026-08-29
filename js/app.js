@@ -1884,6 +1884,19 @@ const App = (() => {
     setTimeout(() => receiveMapUrlFromExtension(slot, mapUrl, { autoExtract }), 300);
   }
 
+  window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin) return;
+    const data = event.data || {};
+    if (data.source !== 'MAPJSON_CONNECTOR') return;
+    if (Array.isArray(data.batch)) {
+      receiveMapUrlBatchFromExtension(data.batch);
+      return;
+    }
+    if (data.mapUrl) {
+      receiveMapUrlFromExtension(Number(data.slot) - 1, data.mapUrl);
+    }
+  });
+
   function updateJsonTabs() {
     document.querySelectorAll('#json-tabs .json-tab-main').forEach(btn => {
       const index = Number(btn.dataset.slotIndex);
