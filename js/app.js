@@ -63,6 +63,7 @@ const App = (() => {
   let redoStack = [];
   let taskStartedAt = Date.now();
   let taskTimerInterval = null;
+  let taskCompletedElapsed = '';
   let downloadFolderHandle = null;
   let latestSubmissionId = '';
   let currentTool = 'hub';
@@ -625,6 +626,7 @@ const App = (() => {
     pushUndoState();
     const clearedIndex = g.slots.findIndex(s => s.sid === sid);
     const s = g.slots.find(s => s.sid === sid);
+    const connectorSlot = Number(s?.data?._connectorSlot);
     if (s) {
       s.data = null;
       s.hiddenFields = [];
@@ -634,6 +636,7 @@ const App = (() => {
     syncCounterFromSlots();
     renderAll();
     renderSelectedJson();
+    notifyConnectorSlotCleared(connectorSlot);
   }
 
   // ── RENDER ALL ─────────────────────────────────────────────
@@ -667,7 +670,10 @@ const App = (() => {
         <img class="group-logo mapjson-logo" src="assets/mapjson-logo.jpg" alt="MapJSON" />
       </div>
       <div class="group-head-tools">
-        <span class="group-meta">${filledCount} / ${g.slots.length} filled</span>
+        <a class="gmap-open-cta header-map-cta is-disabled" id="gmap-open-cta" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open Map">
+          <img src="assets/google-map-pin.png" alt="" aria-hidden="true" />
+          Open Map
+        </a>
         <span class="pill timer-pill" id="task-timer">00:00</span>
         <button class="header-play-btn" id="header-play-btn" type="button" onclick="App.toggleFastTutorial()" aria-label="Toggle Fast Tutorial">
           <span aria-hidden="true"></span>
@@ -1337,6 +1343,16 @@ const App = (() => {
       btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Extract &amp; Build Entry`;
       return;
     }
+    const duplicate = findDuplicateLocation(rawUrl, coords);
+    if (duplicate) {
+      const duplicateName = duplicate.label || `Address ${duplicate.slotIndex + 1}`;
+      alert(`This location is already added in Address ${duplicate.slotIndex + 1}: ${duplicateName}`);
+      setHint('url-lookup-hint', `Duplicate blocked. Address ${duplicate.slotIndex + 1} already has this location.`, 'er');
+      setLookupLoading(false);
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Extract &amp; Build Entry`;
+      return;
+    }
     startTaskTimer();
     setLookupLoading(true, 'Reading coordinates...');
 
@@ -1860,6 +1876,47 @@ const App = (() => {
     updateTotals();
   }
 
+  function notifyConnectorSlotCleared(connectorSlot) {
+    if (!Number.isInteger(connectorSlot) || connectorSlot < 1 || connectorSlot > 3) return;
+    window.postMessage({
+      source: 'MAPJSON_TOOL',
+      type: 'MAPJSON_CLEAR_CONNECTOR_SLOT',
+      slot: connectorSlot
+    }, window.location.origin);
+  }
+
+  function normalizeMapUrl(value) {
+    try {
+      const url = new URL(String(value || '').trim());
+      url.hash = '';
+      url.searchParams.delete('entry');
+      return url.toString().replace(/\/$/, '');
+    } catch (e) {
+      return String(value || '').trim().replace(/\/$/, '');
+    }
+  }
+
+  function locationKeyFromCoords(coords) {
+    if (!coords || !Number.isFinite(Number(coords.lat)) || !Number.isFinite(Number(coords.long ?? coords.lng))) return '';
+    const lat = Number(coords.lat).toFixed(6);
+    const long = Number(coords.long ?? coords.lng).toFixed(6);
+    return `${lat},${long}`;
+  }
+
+  function findDuplicateLocation(mapUrl, coords) {
+    const urlKey = normalizeMapUrl(mapUrl);
+    const coordKey = locationKeyFromCoords(coords);
+    const slots = groups[0]?.slots || [];
+    for (let index = 0; index < slots.length; index += 1) {
+      const data = slots[index]?.data;
+      if (!data) continue;
+      const sameUrl = urlKey && data._mapUrl && normalizeMapUrl(data._mapUrl) === urlKey;
+      const sameCoords = coordKey && locationKeyFromCoords({ lat: data.lat, long: data.long }) === coordKey;
+      if (sameUrl || sameCoords) return { ...data, slotIndex: index };
+    }
+    return null;
+  }
+
   function handleConnectorLaunchParams() {
     const params = new URLSearchParams(window.location.search);
     const batchRaw = params.get('mapjsonBatch');
@@ -1963,8 +2020,7 @@ const App = (() => {
     if (!block) return;
     const slotData = getSelectedSlot()?.data;
     const hasSlotCoords = !!(slotData && hasCoords(slotData));
-    const inputCoords = extractCoords(val('url-lookup-input'));
-    block.classList.toggle('is-hidden', !(hasSlotCoords || inputCoords));
+    block.classList.toggle('is-hidden', !hasSlotCoords);
   }
 
   function scheduleGmapEmbedUpdate() {
@@ -1982,10 +2038,9 @@ const App = (() => {
     if (!frame || !empty) return;
 
     const slotData = getSelectedSlot()?.data;
-    const inputCoords = extractCoords(val('url-lookup-input'));
     const coords = hasCoords(slotData)
       ? { lat: Number(slotData.lat), long: Number(slotData.long), label: slotData.label || '' }
-      : (inputCoords ? { ...inputCoords, label: 'Preview from pasted URL' } : null);
+      : null;
 
     if (!coords) {
       frame.classList.remove('is-visible');
@@ -2300,8 +2355,10 @@ const App = (() => {
     ), 0);
     const total = document.getElementById('total-count');
     const hist = document.getElementById('hist-cnt');
+    const urlFilledMeta = document.getElementById('url-filled-meta');
     if (total) total.textContent = filledSlots;
     if (hist) hist.textContent = allSaved.length;
+    if (urlFilledMeta) urlFilledMeta.textContent = `${filledSlots} / ${totalSlots || 3} filled`;
     document.querySelectorAll('.dl-btn').forEach(btn => {
       btn.classList.toggle('is-hidden', filledSlots === 0);
       btn.disabled = filledSlots === 0;
@@ -2675,6 +2732,7 @@ const App = (() => {
     if (taskTimerInterval) return;
     if (taskTimerInterval) clearInterval(taskTimerInterval);
     taskStartedAt = Date.now();
+    taskCompletedElapsed = '';
     updateTaskTimer();
     taskTimerInterval = setInterval(updateTaskTimer, 1000);
   }
@@ -2683,6 +2741,7 @@ const App = (() => {
     if (taskTimerInterval) clearInterval(taskTimerInterval);
     taskTimerInterval = null;
     taskStartedAt = Date.now();
+    taskCompletedElapsed = '';
     const el = document.getElementById('task-timer');
     if (el) el.textContent = '00:00';
   }
@@ -2701,6 +2760,7 @@ const App = (() => {
   function stopTaskTimer() {
     if (!taskTimerInterval) return;
     updateTaskTimer();
+    taskCompletedElapsed = formatElapsed(Date.now() - taskStartedAt);
     clearInterval(taskTimerInterval);
     taskTimerInterval = null;
   }
@@ -2708,7 +2768,7 @@ const App = (() => {
   function markTaskCompleted() {
     const el = document.getElementById('task-timer');
     if (!el) return;
-    const elapsed = formatElapsed(Date.now() - taskStartedAt);
+    const elapsed = taskCompletedElapsed || formatElapsed(Date.now() - taskStartedAt);
     el.textContent = `Task completed in ${elapsed}`;
     if (taskTimerInterval) clearInterval(taskTimerInterval);
     taskTimerInterval = null;

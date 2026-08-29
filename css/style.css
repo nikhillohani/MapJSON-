@@ -1506,6 +1506,11 @@ body {
   padding: 18px;
   background: #121821;
   gap: 12px;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 .panel,
@@ -3678,6 +3683,18 @@ body.theme-day .group-card .group-meta {
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
+  transform: translateX(-3px);
+}
+
+.url-filled-meta {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .group-card .timer-pill,
@@ -4324,7 +4341,31 @@ body.theme-day .group-card .timer-pill {
 
 .header-play-btn.is-active {
   background: #ffffff;
-  color: #dc2626;
+  color: #4460de;
+}
+
+.header-map-cta,
+body.theme-night .header-map-cta,
+body.theme-day .header-map-cta {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.header-map-cta img {
+  width: 18px;
+  height: 18px;
+}
+
+.group-head-tools {
+  gap: 12px;
 }
 
 .dl-btn,
@@ -4875,13 +4916,20 @@ body.theme-day .group-card .timer-pill {
 .json-output-panel .json-field-option button {
   width: 86px;
   min-height: 36px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 14px !important;
   border-radius: 8px;
   background: #ffffff !important;
   border-color: #ffffff !important;
   color: #3450c8 !important;
   font-size: 12px;
   font-weight: 950;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  align-self: center;
   opacity: 1 !important;
 }
 
@@ -5257,6 +5305,11 @@ body.theme-night .panel.json-output-panel {
   padding: 0 14px !important;
   border-radius: 8px !important;
   font-size: 15px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1 !important;
+  text-align: center;
 }
 
 .json-output-panel .json-more-panel {
@@ -5302,6 +5355,7 @@ body.theme-night .panel.dropdown-panel {
   cursor: pointer;
   list-style: none;
   user-select: none;
+  margin: 0 !important;
 }
 
 .dropdown-panel > summary.dropdown-summary::-webkit-details-marker {
@@ -5313,7 +5367,12 @@ body.theme-night .panel.dropdown-panel {
 }
 
 .dropdown-panel .dropdown-content {
-  padding: 0 20px 20px;
+  padding: 18px 20px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.dropdown-panel:not([open]) .dropdown-content {
+  display: none;
 }
 
 .dropdown-panel .dropdown-chevron {
@@ -5325,11 +5384,18 @@ body.theme-night .panel.dropdown-panel {
   justify-content: center;
   background: #caff2f;
   color: #071225;
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1;
-  transition: transform 0.18s ease;
+  transition: transform 0.22s ease, background 0.18s ease;
   flex: 0 0 auto;
+}
+
+.dropdown-panel .dropdown-chevron::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-right: 4px solid currentColor;
+  border-bottom: 4px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  border-radius: 2px;
 }
 
 .dropdown-panel[open] .dropdown-chevron {
@@ -5341,7 +5407,11 @@ body.theme-night .panel.dropdown-panel {
 }
 
 .dropdown-panel.json-output-panel[open] .out-hdr {
-  margin-bottom: 10px !important;
+  margin-bottom: 0 !important;
+}
+
+.dropdown-panel.json-output-panel .json-tabs {
+  margin-top: 0 !important;
 }
 
 @media (max-width: 640px) {
@@ -5351,6 +5421,106 @@ body.theme-night .panel.dropdown-panel {
   }
 
   .dropdown-panel .dropdown-content {
-    padding: 0 16px 16px;
+    padding: 14px 16px 16px;
+  }
+}
+
+.group-head .header-map-cta,
+body.theme-night .group-head .header-map-cta,
+body.theme-day .group-head .header-map-cta {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px !important;
+  background: #cff44a !important;
+  border-color: #cff44a !important;
+  color: #000000 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: none !important;
+}
+
+.group-head .header-map-cta img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.group-head .header-map-cta:hover {
+  background: #dfff72 !important;
+  border-color: #dfff72 !important;
+  color: #000000 !important;
+}
+
+@media (max-width: 520px) {
+  .group-head .header-map-cta {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0;
+  }
+
+  .group-head .header-map-cta img {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Dropdown scroll/clip fix. Keep opened secondary cards fully usable. */
+.dropdown-panel,
+body.theme-night .dropdown-panel,
+body.theme-day .dropdown-panel,
+body.theme-night .panel.dropdown-panel,
+.address-lookup-panel.dropdown-panel,
+.json-output-panel.dropdown-panel {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.dropdown-panel[open] .dropdown-content {
+  display: block !important;
+  overflow: visible !important;
+}
+
+.address-lookup-panel.dropdown-panel[open] .geo-search-btn,
+.json-output-panel.dropdown-panel[open] .json-more-toggle,
+.json-output-panel.dropdown-panel[open] .json-field-option button {
+  display: inline-flex !important;
+}
+
+@media (min-width: 981px) {
+  body {
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .shell {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .right {
+    display: flex !important;
+    height: 100%;
+    min-height: 0;
+    max-height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 980px) {
+  body {
+    height: auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
 }

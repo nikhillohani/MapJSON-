@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=86" />
+  <link rel="stylesheet" href="css/style.css?v=97" />
 </head>
 <body>
   <div class="splash-screen" id="splash-screen">
@@ -64,10 +64,7 @@
         <div class="panel-title">
           <img class="panel-title-icon map-pin-icon" src="assets/google-map-pin.png" alt="" aria-hidden="true" />
           Google Maps URL
-          <a class="gmap-open-cta is-disabled" id="gmap-open-cta" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open Map">
-            <img src="assets/google-map-pin.png" alt="" aria-hidden="true" />
-            Open Map
-          </a>
+          <span class="url-filled-meta" id="url-filled-meta">0 / 3 filled</span>
         </div>
 
         <div class="fg">
@@ -119,7 +116,7 @@
           <img class="panel-title-icon address-map-icon" src="assets/address-map-icon.png" alt="" aria-hidden="true" />
           Address Details
           </span>
-          <span class="dropdown-chevron" aria-hidden="true">⌄</span>
+          <span class="dropdown-chevron" aria-hidden="true"></span>
         </summary>
         <div class="dropdown-content">
           <div class="fg">
@@ -144,7 +141,7 @@
       <details class="panel dropdown-panel json-output-panel is-hidden">
         <summary class="dropdown-summary out-hdr">
           <span class="panel-title" style="margin:0">Latest JSON Output</span>
-          <span class="dropdown-chevron" aria-hidden="true">⌄</span>
+          <span class="dropdown-chevron" aria-hidden="true"></span>
         </summary>
         <div class="dropdown-content">
         <div class="json-tabs" id="json-tabs">
@@ -271,6 +268,6 @@
   </div>
 
   
-  <script src="js/app.js?v=86"></script>
+  <script src="js/app.js?v=97"></script>
 </body>
 </html>
