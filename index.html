@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=85" />
+  <link rel="stylesheet" href="css/style.css?v=86" />
 </head>
 <body>
   <div class="splash-screen" id="splash-screen">
@@ -113,33 +113,40 @@
         </div>
       </div>
 
-      <div class="panel address-lookup-panel" id="address-lookup-panel">
-        <div class="panel-title">
+      <details class="panel dropdown-panel address-lookup-panel" id="address-lookup-panel">
+        <summary class="dropdown-summary">
+          <span class="panel-title">
           <img class="panel-title-icon address-map-icon" src="assets/address-map-icon.png" alt="" aria-hidden="true" />
           Address Details
-        </div>
-        <div class="fg">
-          <textarea id="address-lookup-input" rows="3" oninput="App.validateLookupInputs()"
-            placeholder="The Well Cafe&#10;12 Market Street&#10;Denver, CO 80202"></textarea>
-        </div>
-        <button class="geo-search-btn" id="address-lookup-btn" onclick="App.lookupFromAddress()" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-          Search &amp; Build Entry
-        </button>
-        <div class="lookup-loading" id="address-lookup-loading" aria-live="polite">
-          <div class="modern-loader">
-            <span></span><span></span><span></span>
+          </span>
+          <span class="dropdown-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="dropdown-content">
+          <div class="fg">
+            <textarea id="address-lookup-input" rows="3" oninput="App.validateLookupInputs()"
+              placeholder="The Well Cafe&#10;12 Market Street&#10;Denver, CO 80202"></textarea>
           </div>
-          <b id="address-lookup-loading-text">Searching address details...</b>
+          <button class="geo-search-btn" id="address-lookup-btn" onclick="App.lookupFromAddress()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            Search &amp; Build Entry
+          </button>
+          <div class="lookup-loading" id="address-lookup-loading" aria-live="polite">
+            <div class="modern-loader">
+              <span></span><span></span><span></span>
+            </div>
+            <b id="address-lookup-loading-text">Searching address details...</b>
+          </div>
+          <div class="hint" id="address-lookup-hint"></div>
         </div>
-        <div class="hint" id="address-lookup-hint"></div>
-      </div>
+      </details>
 
       <!-- JSON Output -->
-      <div class="panel json-output-panel is-hidden">
-        <div class="out-hdr">
+      <details class="panel dropdown-panel json-output-panel is-hidden">
+        <summary class="dropdown-summary out-hdr">
           <span class="panel-title" style="margin:0">Latest JSON Output</span>
-        </div>
+          <span class="dropdown-chevron" aria-hidden="true">⌄</span>
+        </summary>
+        <div class="dropdown-content">
         <div class="json-tabs" id="json-tabs">
           <div class="json-tab-combo">
             <button class="json-tab-main" type="button" data-slot-index="0" onclick="App.selectSlot(0)">
@@ -210,7 +217,8 @@
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </details>
 
 
 
@@ -263,6 +271,6 @@
   </div>
 
   
-  <script src="js/app.js?v=85"></script>
+  <script src="js/app.js?v=86"></script>
 </body>
 </html>
