@@ -563,11 +563,28 @@ const App = (() => {
   function restoreSavedEntriesToSlots() {
     const group = groups[0];
     if (!group || !allSaved.length) return;
-    const entries = [...allSaved].reverse().slice(0, group.slots.length);
-    entries.forEach((entry, index) => {
-      if (!group.slots[index]) return;
-      group.slots[index].data = { ...entry };
-      group.slots[index].hiddenFields = [];
+    group.slots.forEach(slot => {
+      slot.data = null;
+      slot.hiddenFields = [];
+    });
+
+    allSaved.forEach(entry => {
+      const connectorSlot = Number(entry._connectorSlot);
+      if (!Number.isInteger(connectorSlot) || connectorSlot < 1 || connectorSlot > group.slots.length) return;
+      group.slots[connectorSlot - 1].data = { ...entry };
+      group.slots[connectorSlot - 1].hiddenFields = [];
+    });
+
+    const remainingEntries = [...allSaved]
+      .reverse()
+      .filter(entry => {
+        const connectorSlot = Number(entry._connectorSlot);
+        return !Number.isInteger(connectorSlot) || connectorSlot < 1 || connectorSlot > group.slots.length;
+      });
+    group.slots.forEach(slot => {
+      if (slot.data || !remainingEntries.length) return;
+      slot.data = { ...remainingEntries.shift() };
+      slot.hiddenFields = [];
     });
     updateGroupJsonFromSlots(group);
     const maxId = allSaved
@@ -1290,9 +1307,10 @@ const App = (() => {
       validateLookupInputs();
       return;
     }
-    const target = forcedUrlTargetSlotIndex === null
+    const connectorSlotIndex = forcedUrlTargetSlotIndex;
+    const target = connectorSlotIndex === null
       ? findNextEmptySlot()
-      : getSlotTargetByIndex(forcedUrlTargetSlotIndex);
+      : getSlotTargetByIndex(connectorSlotIndex);
     forcedUrlTargetSlotIndex = null;
     if (!target) {
       setHint('url-lookup-hint', 'All three slots are full. Clear a slot before adding another address.', 'er');
@@ -1368,6 +1386,9 @@ const App = (() => {
       long: coords.long,
     });
     urlLookupResult._mapUrl = rawUrl;
+    if (connectorSlotIndex !== null) {
+      urlLookupResult._connectorSlot = connectorSlotIndex + 1;
+    }
 
     setLookupLoading(true, 'Filling next empty slot...');
     fillNextEmptySlot(urlLookupResult, target, {
@@ -1823,15 +1844,15 @@ const App = (() => {
   function clearSlotFromConnector(slotIndex) {
     const target = getSlotTargetByIndex(slotIndex);
     if (!target?.slot) return;
+    const connectorSlot = Number(slotIndex) + 1;
     const existing = target.slot.data;
+    if (!existing || Number(existing._connectorSlot) !== connectorSlot) {
+      setHint('url-lookup-hint', `Connector slot ${connectorSlot} has no locked entry to remove.`, 'er');
+      return;
+    }
     target.slot.data = null;
     target.slot.hiddenFields = [];
-    if (existing) {
-      allSaved = allSaved.filter(entry => (
-        entry.id !== existing.id &&
-        entry._mapUrl !== existing._mapUrl
-      ));
-    }
+    allSaved = allSaved.filter(entry => Number(entry._connectorSlot) !== connectorSlot);
     updateGroupJsonFromSlots(target.group);
     storageSave();
     renderAll();
