@@ -190,6 +190,7 @@ const App = (() => {
     storageLoad();
     updateAdminVisibility();
     addGroup();
+    restoreSavedEntriesToSlots();
     selectSlot(selectedSlotIndex, { scroll: false });
     renderUsageLog();
     updateTotals();
@@ -556,6 +557,24 @@ const App = (() => {
     const gid   = gidCounter++;
     const slots = [makeSlot(), makeSlot(), makeSlot()];
     groups.push({ gid, slots, generatedJSON: null });
+    renderAll();
+  }
+
+  function restoreSavedEntriesToSlots() {
+    const group = groups[0];
+    if (!group || !allSaved.length) return;
+    const entries = [...allSaved].reverse().slice(0, group.slots.length);
+    entries.forEach((entry, index) => {
+      if (!group.slots[index]) return;
+      group.slots[index].data = { ...entry };
+      group.slots[index].hiddenFields = [];
+    });
+    updateGroupJsonFromSlots(group);
+    const maxId = allSaved
+      .map(entry => Number(entry.id))
+      .filter(Number.isFinite)
+      .reduce((max, id) => Math.max(max, id), 0);
+    globalIdCounter = Math.max(globalIdCounter, maxId + 1);
     renderAll();
   }
 
