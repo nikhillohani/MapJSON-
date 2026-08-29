@@ -1797,12 +1797,18 @@ const App = (() => {
     const cleanItems = (Array.isArray(items) ? items : [])
       .map(item => ({
         slot: Math.max(0, Math.min(2, Number(item.slot) - 1 || 0)),
-        url: String(item.url || '').trim()
+        url: String(item.url || '').trim(),
+        clear: Boolean(item.clear)
       }))
-      .filter(item => item.url);
+      .filter(item => item.url || item.clear);
     if (!cleanItems.length) return;
     showTool('mapjson');
     for (const item of cleanItems) {
+      if (item.clear) {
+        clearSlotFromConnector(item.slot);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        continue;
+      }
       receiveMapUrlFromExtension(item.slot, item.url, {
         autoExtract: false,
         scroll: false
@@ -1812,6 +1818,25 @@ const App = (() => {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
     setHint('url-lookup-hint', `Connector added ${cleanItems.length} map URL${cleanItems.length > 1 ? 's' : ''}.`, 'ok');
+  }
+
+  function clearSlotFromConnector(slotIndex) {
+    const target = getSlotTargetByIndex(slotIndex);
+    if (!target?.slot) return;
+    const existing = target.slot.data;
+    target.slot.data = null;
+    target.slot.hiddenFields = [];
+    if (existing) {
+      allSaved = allSaved.filter(entry => (
+        entry.id !== existing.id &&
+        entry._mapUrl !== existing._mapUrl
+      ));
+    }
+    updateGroupJsonFromSlots(target.group);
+    storageSave();
+    renderAll();
+    selectSlot(slotIndex, { scroll: false });
+    updateTotals();
   }
 
   function handleConnectorLaunchParams() {
@@ -2235,6 +2260,7 @@ const App = (() => {
 
   // ── TOTALS ──────────────────────────────────────────────────
   function updateTotals() {
+    const totalSlots = groups.reduce((sum, group) => sum + group.slots.length, 0);
     const filledSlots = groups.reduce((sum, group) => (
       sum + group.slots.filter(slot => slot.data).length
     ), 0);
@@ -2246,6 +2272,7 @@ const App = (() => {
       btn.classList.toggle('is-hidden', filledSlots === 0);
       btn.disabled = filledSlots === 0;
     });
+    if (filledSlots >= totalSlots && totalSlots > 0) stopTaskTimer();
   }
 
   // ── UTILITIES ────────────────────────────────────────────────
@@ -2635,6 +2662,13 @@ const App = (() => {
     const el = document.getElementById('task-timer');
     if (!el) return;
     el.textContent = formatElapsed(Date.now() - taskStartedAt);
+  }
+
+  function stopTaskTimer() {
+    if (!taskTimerInterval) return;
+    updateTaskTimer();
+    clearInterval(taskTimerInterval);
+    taskTimerInterval = null;
   }
 
   function markTaskCompleted() {
